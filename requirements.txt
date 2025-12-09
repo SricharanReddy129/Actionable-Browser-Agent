@@ -1,0 +1,5 @@
+playwright
+paddleocr
+python-dotenv
+cryptography
+tqdm
