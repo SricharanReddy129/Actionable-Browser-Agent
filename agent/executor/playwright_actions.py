@@ -1,74 +1,38 @@
-# executor/executor_core.py
+from playwright.async_api import async_playwright
 
-from executor.playwright_actions import PlaywrightExecutor
-
-
-class ExecutorCore:
-    """
-    Executor receives ACTIONS from the Planner:
-    {
-        "action": "goto" | "click" | "extract_dom" | "screenshot",
-        "url": "...",
-        "selector": "...",
-        "intent": {...}
-    }
-
-    The Executor performs actions using Playwright
-    and returns raw observation to Perceptor:
-    {
-        "status": "ok",
-        "html": "...",
-        "screenshot": null,
-        "intent": {...}
-    }
-    """
-
+class PlaywrightExecutor:
     def __init__(self):
-        self.engine = PlaywrightExecutor()
+        self.browser = None
+        self.page = None
+        self.pw = None
 
-    async def start(self):
-        await self.engine.start()
+    async def start(self, headless=True):
+        """Start Playwright browser instance."""
+        self.pw = await async_playwright().start()
+        self.browser = await self.pw.chromium.launch(headless=headless)
+        self.page = await self.browser.new_page()
 
-    async def run(self, planner_action: dict):
-        action = planner_action.get("action")
-        intent = planner_action.get("intent")
+    async def goto_page(self, url: str):
+        """Navigate to a URL and return the DOM."""
+        await self.page.goto(url)
+        return await self.page.content()
 
-        html = None
-        screenshot = None
+    async def click_element(self, selector: str):
+        """Click an element and return updated DOM."""
+        await self.page.click(selector)
+        return await self.page.content()
 
-        # -------------------------
-        # Action Routing
-        # -------------------------
-        if action == "goto":
-            url = planner_action.get("url")
-            html = await self.engine.goto_page(url)
+    async def extract_dom(self):
+        """Return current DOM content."""
+        return await self.page.content()
 
-        elif action == "click":
-            selector = planner_action.get("selector")
-            html = await self.engine.click_element(selector)
-
-        elif action == "extract_dom":
-            html = await self.engine.extract_dom()
-
-        elif action == "screenshot":
-            screenshot = await self.engine.screenshot()
-
-        else:
-            return {
-                "status": "error",
-                "message": f"Unknown action '{action}'",
-                "intent": intent
-            }
-
-        # -------------------------
-        # Standard Raw Output
-        # -------------------------
-        return {
-            "status": "ok",
-            "html": html,
-            "screenshot": screenshot,
-            "intent": intent
-        }
+    async def screenshot(self, path="page.png"):
+        """Take a screenshot and return the file path."""
+        await self.page.screenshot(path=path)
+        return path
 
     async def stop(self):
-        await self.engine.stop()
+        if self.browser:
+            await self.browser.close()
+        if self.pw:
+            await self.pw.stop()

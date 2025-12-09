@@ -1,7 +1,18 @@
 # executor/executor_core.py
 
 from .playwright_actions import PlaywrightExecutor
-from .executor_schema import build_executor_response
+
+# ------------------------------
+# Standard Response Builder
+# ------------------------------
+def build_executor_response(html=None, screenshot=None, intent=None):
+    return {
+        "status": "ok",
+        "html": html,
+        "screenshot": screenshot,
+        "intent": intent
+    }
+
 
 class ExecutorCore:
     def __init__(self):
