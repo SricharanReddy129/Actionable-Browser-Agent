@@ -3,3 +3,4 @@ paddleocr
 python-dotenv
 cryptography
 tqdm
+BeautifulSoup4
